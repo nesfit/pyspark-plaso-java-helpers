@@ -36,12 +36,16 @@ public class HalyardRDD {
      * @param tableName                        Halyard repository/HBase table
      * @param hbaseZookeeperQuorumOrConfigPath HBase Zookeeper quorum of HBase config path
      * @param hbaseZookeeperClientPort         the Zookeeper client port
+     * @return how long the processing took in nano-seconds
      */
-    public static void saveToHalyard(JavaRDD<Object> javaRDD, String tableName, String hbaseZookeeperQuorumOrConfigPath,
+    public static long saveToHalyard(JavaRDD<Object> javaRDD, String tableName, String hbaseZookeeperQuorumOrConfigPath,
                                      Integer hbaseZookeeperClientPort) throws IOException {
+        long startTime = System.nanoTime();
         javaRDD.map(jsonString -> PLASO_PARSER.parseSingleEntry(new ByteArrayInputStream(((String) jsonString).getBytes(JSON_ENCODING))))
                 .foreachPartition(plasoEntryIterator -> HalyardRDD.foreachPartitionFunction(plasoEntryIterator,
                         tableName, hbaseZookeeperQuorumOrConfigPath, hbaseZookeeperClientPort));
+        long estimatedTime = System.nanoTime() - startTime;
+        return estimatedTime;
     }
 
     /**
@@ -50,9 +54,10 @@ public class HalyardRDD {
      * @param javaRDD    a JavaRDD object of Plaso (Event, EventData) pairs
      * @param tableName  Halyard repository/HBase table
      * @param configPath HBase config path
+     * @return how long the processing took in nano-seconds
      */
-    public static void saveToHalyard(JavaRDD<Object> javaRDD, String tableName, String configPath) throws IOException {
-        HalyardRDD.saveToHalyard(javaRDD, tableName, configPath, null);
+    public static long saveToHalyard(JavaRDD<Object> javaRDD, String tableName, String configPath) throws IOException {
+        return HalyardRDD.saveToHalyard(javaRDD, tableName, configPath, null);
     }
 
     /**
@@ -60,9 +65,10 @@ public class HalyardRDD {
      *
      * @param javaRDD   a JavaRDD object of Plaso (Event, EventData) pairs
      * @param tableName Halyard repository/HBase table
+     * @return how long the processing took in nano-seconds
      */
-    public static void saveToHalyard(JavaRDD<Object> javaRDD, String tableName) throws IOException {
-        HalyardRDD.saveToHalyard(javaRDD, tableName, null, null);
+    public static long saveToHalyard(JavaRDD<Object> javaRDD, String tableName) throws IOException {
+        return HalyardRDD.saveToHalyard(javaRDD, tableName, null, null);
     }
 
     protected static Resource getContext() {
