@@ -1,19 +1,21 @@
 package tarzan.helpers.rdd;
 
-import io.github.radkovo.rdf4j.builder.TargetModel;
 import cz.vutbr.fit.ta.core.RDFConnector;
 import cz.vutbr.fit.ta.core.ResourceFactory;
 import cz.vutbr.fit.ta.halyard.RDFConnectorHalyard;
 import cz.vutbr.fit.ta.ontology.Timeline;
 import cz.vutbr.fit.ta.splaso.PlasoEntry;
+import cz.vutbr.fit.ta.splaso.PlasoJsonParser;
 import cz.vutbr.fit.ta.splaso.SparkPlasoSource;
+import io.github.radkovo.rdf4j.builder.TargetModel;
 import org.apache.spark.api.java.JavaRDD;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import scala.Tuple2;
-import tarzan.helpers.py4j.PythonObjectsReflexion;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -22,8 +24,10 @@ import java.util.stream.StreamSupport;
 
 public class HalyardRDD {
 
-    public static final String MODULE_NAME = "plaso";
-    public static final String PROFILE_ID = "plasotest";
+    private static final String MODULE_NAME = "plaso";
+    private static final String PROFILE_ID = "plasotest";
+    private static final Charset JSON_ENCODING = StandardCharsets.US_ASCII;
+    private static final PlasoJsonParser PLASO_PARSER = new PlasoJsonParser();
 
     /**
      * Collects and save Plaso (Event, EventData) pairs into Halyard as RDF triplets.
@@ -35,8 +39,7 @@ public class HalyardRDD {
      */
     public static void saveToHalyard(JavaRDD<Object> javaRDD, String tableName, String hbaseZookeeperQuorumOrConfigPath,
                                      Integer hbaseZookeeperClientPort) throws IOException {
-        javaRDD.map(HalyardRDD::objectOfObjectArrayToObjectTuple2)
-                .map(eventTuple -> HalyardRDD.mapToPlasoEntryFunction(eventTuple._1, eventTuple._2))
+        javaRDD.map(jsonString -> PLASO_PARSER.parseSingleEntry(new ByteArrayInputStream(((String) jsonString).getBytes(JSON_ENCODING))))
                 .foreachPartition(plasoEntryIterator -> HalyardRDD.foreachPartitionFunction(plasoEntryIterator,
                         tableName, hbaseZookeeperQuorumOrConfigPath, hbaseZookeeperClientPort));
     }
@@ -60,23 +63,6 @@ public class HalyardRDD {
      */
     public static void saveToHalyard(JavaRDD<Object> javaRDD, String tableName) throws IOException {
         HalyardRDD.saveToHalyard(javaRDD, tableName, null, null);
-    }
-
-    protected static Tuple2<Object, Object> objectOfObjectArrayToObjectTuple2(Object object) {
-        final Object[] objectsArray = PythonObjectsReflexion.objectToObjectArray(object);
-        if ((objectsArray != null) && (objectsArray.length >= 2)) {
-            return new Tuple2<Object, Object>(objectsArray[0], objectsArray[1]);
-        } else {
-            return null;
-        }
-    }
-
-    protected static PlasoEntry mapToPlasoEntryFunction(Object event, Object eventData) {
-        final Map<String, Object> eventStringObjectMap = PythonObjectsReflexion.objectToAttrValMap(event);
-        final Map<String, Object> eventDataStringObjectMap = PythonObjectsReflexion.objectToAttrValMap(eventData);
-        final Map<String, String> eventMap = PythonObjectsReflexion.stringObjectMapToStringStringMap(eventStringObjectMap);
-        final Map<String, String> eventDataMap = PythonObjectsReflexion.stringObjectMapToStringStringMap(eventDataStringObjectMap);
-        return new PlasoEntry(eventMap, eventDataMap);
     }
 
     protected static Resource getContext() {
