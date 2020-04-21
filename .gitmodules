@@ -1,0 +1,10 @@
+[submodule "deps/timeline-analyzer"]
+	path = deps/timeline-analyzer
+	url = https://github.com/nesfit/timeline-analyzer.git
+	branch = hbase2
+[submodule "deps/rdf4j-vocab-builder"]
+	path = deps/rdf4j-vocab-builder
+	url = https://github.com/radkovo/rdf4j-vocab-builder.git
+[submodule "deps/rdf4j-class-builder"]
+	path = deps/rdf4j-class-builder
+	url = https://github.com/radkovo/rdf4j-class-builder.git
