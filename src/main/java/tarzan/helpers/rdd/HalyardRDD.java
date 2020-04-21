@@ -13,7 +13,9 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
@@ -29,6 +31,30 @@ public class HalyardRDD {
     private static final Charset JSON_ENCODING = StandardCharsets.US_ASCII;
     private static final PlasoJsonParser PLASO_PARSER = new PlasoJsonParser();
 
+    protected static ByteArrayInputStream objectToByteArrayInputStream(Object object) throws IOException {
+        if (object instanceof String) {
+            // it is a String object
+            final String stringObject = (String) object;
+            final byte[] byteArray = stringObject.getBytes(JSON_ENCODING);
+            return new ByteArrayInputStream(byteArray);
+        } else {
+            // it is a cPickle object (see a debug file)
+            try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                 ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)) {
+                objectOutputStream.writeObject(object);
+                objectOutputStream.flush();
+                final byte[] byteArray = byteArrayOutputStream.toByteArray();
+                /* DEBUG *
+                try (FileOutputStream fileOutputStream
+                             = new FileOutputStream("/tmp/objectToByteArrayInputStream_" + object.toString())) {
+                    fileOutputStream.write(byteArray);
+                }
+                /* */
+                return new ByteArrayInputStream(byteArray);
+            }
+        }
+    }
+
     /**
      * Collects and save Plaso (Event, EventData) pairs into Halyard as RDF triplets.
      *
@@ -41,7 +67,7 @@ public class HalyardRDD {
     public static long saveToHalyard(JavaRDD<Object> javaRDD, String tableName, String hbaseZookeeperQuorumOrConfigPath,
                                      Integer hbaseZookeeperClientPort) throws IOException {
         long startTime = System.nanoTime();
-        javaRDD.map(jsonString -> PLASO_PARSER.parseSingleEntry(new ByteArrayInputStream(((String) jsonString).getBytes(JSON_ENCODING))))
+        javaRDD.map(jsonString -> PLASO_PARSER.parseSingleEntry(HalyardRDD.objectToByteArrayInputStream(jsonString)))
                 .foreachPartition(plasoEntryIterator -> HalyardRDD.foreachPartitionFunction(plasoEntryIterator,
                         tableName, hbaseZookeeperQuorumOrConfigPath, hbaseZookeeperClientPort));
         long estimatedTime = System.nanoTime() - startTime;
