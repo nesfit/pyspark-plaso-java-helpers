@@ -11,33 +11,40 @@ cd ${DIRNAME}/timeline-analyzer-builder
 ## https://github.com/nesfit/timeline-analyzer/blob/master/misc/clone.sh
 
 for I in \
-	https://github.com/nesfit/timeline-analyzer.git \
-	https://github.com/radkovo/sqljet.git \
-	https://github.com/radkovo/rdf4j-vocab-builder.git \
-	https://github.com/radkovo/rdf4j-class-builder.git \
-; do
-	DIR=$(basename $I .git)
+	"https://github.com/nesfit/timeline-analyzer.git|hbase2" \
+	"https://github.com/radkovo/rdf4j-vocab-builder.git" \
+	"https://github.com/radkovo/rdf4j-class-builder.git" \
+;
+#	"https://github.com/radkovo/sqljet.git" \
+do
+	REPO=${I%|*}
+	BRANCH=$(echo ${I} | cut -s -d '|' -f 2)
+	DIR=$(basename ${REPO} .git)
+	echo "# repo: ${REPO}" 1>&2
+	echo "# branch: ${BRANCH}" 1>&2
+	echo "# dir: ${DIR}" 1>&2
 	if [ -d ${DIR} ]; then
 		cd ${DIR}
-		git pull --ff-only
+		git pull --ff-only --depth 1
+		[ -n "${BRANCH}" ] && git checkout ${BRANCH}
 		cd -
 	else
-		git clone --depth 1 $I
+		[ -n "${BRANCH}" ] && BRANCH_ARG="--branch ${BRANCH}" || unset BRANCH_ARG
+		git clone --depth 1 ${BRANCH_ARG} ${REPO}
 	fi
 done
 
 ## https://github.com/nesfit/timeline-analyzer/blob/master/misc/install.sh
 
-# Halyard JAR
-cd ./timeline-analyzer
-mvn install:install-file \
-   -Dfile=./timeline-storage-halyard/lib/halyard-common-1.3.jar \
-   -DgroupId=com.msd.gin.halyard.common \
-   -DartifactId=halyard-common \
-   -Dversion=1.3 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
+# Halyard JAR () and sqljet (required by timeline-analyzer-local)
+cd ./timeline-analyzer/misc
+source ./install.sh
 cd -
+
+# sqljet (required by timeline-analyzer-local)
+#cd ./sqljet
+#mvn install -DskipTests
+#cd -
 
 # rdf4j-vocab-builder
 cd ./rdf4j-vocab-builder
@@ -46,11 +53,6 @@ cd -
 
 # rdf4j-class-builder
 cd ./rdf4j-class-builder
-mvn install -DskipTests
-cd -
-
-# sqljet (required by timeline-analyzer-local)
-cd ./sqljet
 mvn install -DskipTests
 cd -
 
