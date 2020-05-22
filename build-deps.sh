@@ -16,17 +16,17 @@ cd -
 
 # sqljet (required by timeline-analyzer-local)
 #cd ${DEPDIR}/sqljet
-#mvn install -DskipTests
+#mvn ${MAVEN_CLI_OPTS} install -DskipTests
 #cd -
 
 # rdf4j-vocab-builder
 cd ${DEPDIR}/rdf4j-vocab-builder
-mvn install -DskipTests
+mvn ${MAVEN_CLI_OPTS} install -DskipTests
 cd -
 
 # rdf4j-class-builder
 cd ${DEPDIR}/rdf4j-class-builder
-mvn install -DskipTests
+mvn ${MAVEN_CLI_OPTS} install -DskipTests
 cd -
 
 ## timeline-spark without hadoop libs
@@ -37,7 +37,7 @@ cd -
 ## timeline-analyzer including timeline-spark
 
 cd ${DEPDIR}/timeline-analyzer
-mvn package
+mvn ${MAVEN_CLI_OPTS} package
 cd -
 
 mkdir -p ${LIBDIR}

@@ -1,6 +1,6 @@
 # pyspark-plaso-java-helpers
 
-(c) 2019 Marek Rychly (rychly@fit.vutbr.cz)
+(c) 2019-2020 Marek Rychly (rychly@fit.vutbr.cz)
 
 Parts of PySpark Plaso that must be implemented in Java to help with the RDD processing.
 

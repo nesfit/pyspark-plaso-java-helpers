@@ -3,4 +3,4 @@
 DIRNAME=$(dirname ${0})
 
 cd ${DIRNAME}
-. ./gradlew build $@
+. ./gradlew --build-cache build $@

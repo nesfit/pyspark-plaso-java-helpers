@@ -14,7 +14,7 @@ pkgs.stdenv.mkDerivation rec {
   inherit name;
 
   buildInputs = with pkgs; [
-    pkgs.jdk pkgs.gradle pkgs.maven
+    jdk gradle maven
   ];
 
   shellHook = ''
